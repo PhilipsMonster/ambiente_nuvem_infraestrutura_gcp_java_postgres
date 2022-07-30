@@ -17,71 +17,67 @@ resource "google_artifact_registry_repository" "spotmusic-repo-front" {
   format = "DOCKER"
 }
 
+resource "google_compute_network" "private_network" {
+  provider = google-beta
+
+  name = "private-network"
+}
+
 resource "google_compute_global_address" "private_ip_address" {
-  name          = "${local.env}-${local.project}-private-ip-address"
+  provider = google-beta
+
+  name          = "private-ip-address"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16
-  network       = google_compute_network.vpc.id
+  network       = google_compute_network.private_network.id
 }
 
 resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.vpc.id
+  provider = google-beta
+
+  network                 = google_compute_network.private_network.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
 }
 
-resource "google_sql_database_instance" "main" {
-  name             = "main-instance"
-  database_version = "POSTGRES_14"
+resource "random_id" "seara" {
+  byte_length = 4
+}
+
+resource "google_sql_database_instance" "instance" {
+  provider = google-beta
+
+  name             = "private-instance-${random_id.db_name_suffix.hex}"
   region           = "us-central1"
+  database_version = "POSTGRES_14"
 
   depends_on = [google_service_networking_connection.private_vpc_connection]
 
   settings {
     tier = "db-f1-micro"
-
     ip_configuration {
-      dynamic "authorized_networks" {
-        for_each = local.authorized_networks
-        content {
-          name  = lookup(authorized_networks.value, "name", null)
-          value = authorized_networks.value.value
-        }
-      }
-
-      ipv4_enabled    = true
-      private_network = google_compute_network.vpc.id
+      ipv4_enabled    = false
+      private_network = google_compute_network.private_network.id
     }
   }
-  deletion_protection = "false"
 }
 
-resource "google_sql_database" "db" {
-  name      = "citizix"
+provider "google-beta" {
+  region = "us-central1"
+  zone   = "us-central1-a"
+}
+
+resource "google_sql_database" "searaembu" {
+  name      = "searaembu"
   instance  = local.sql_instance_name
   charset   = "utf8"
   collation = "utf8_general_ci"
 }
 
 resource "google_sql_user" "user" {
-  name     = "root"
+  name     = "seara"
   instance = local.sql_instance_name
   host     = "%"
   password = ""
-}
-
-output "postgres_instance_name" {
-  description = "The name of the postgres database instance"
-  value       = google_sql_database_instance.postgres.name
-}
-
-output "postgres_public_ip_address" {
-  description = "The public IPv4 address of the postgres instance."
-  value       = google_sql_database_instance.postgres.public_ip_address
-}
-
-output "postgres_private_ip_address" {
-  description = "The public IPv4 address of the postgres instance."
-  value       = google_sql_database_instance.postgres.private_ip_address
 }
