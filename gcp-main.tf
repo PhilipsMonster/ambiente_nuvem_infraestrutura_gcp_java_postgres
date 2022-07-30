@@ -17,18 +17,18 @@ resource "google_artifact_registry_repository" "seara-repo-front" {
   format = "DOCKER"
 }
 
-resource "google_compute_network" "custom_test" {
-  provider                = google-beta
-  name                    = "vpc-con"
-  auto_create_subnetworks = false
-}
-
 resource "google_compute_subnetwork" "custom_test" {
   provider      = google-beta
   name          = "vpc-con"
   ip_cidr_range = "10.2.0.0/28"
   region        = "us-central1"
   network       = google_compute_network.custom_test.id
+}
+
+resource "google_compute_network" "custom_test" {
+  provider                = google-beta
+  name                    = "vpc-con"
+  auto_create_subnetworks = false
 }
 
 resource "google_vpc_access_connector" "connector" {
