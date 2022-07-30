@@ -1,19 +1,19 @@
 # Create Artifact Registry Repository for Docker containers
-resource "google_artifact_registry_repository" "spotmusic-repo-back" {
+resource "google_artifact_registry_repository" "seara-repo-back" {
   provider = google-beta
 
   location = "us-central1"
   repository_id = "spotmusic-back"
-  description = "Imagens Docker to SpotMusic BackEnd"
+  description = "Imagens Docker to Seara BackEnd"
   format = "DOCKER"
 }
 
-resource "google_artifact_registry_repository" "spotmusic-repo-front" {
+resource "google_artifact_registry_repository" "seara-repo-front" {
   provider = google-beta
 
   location = "us-central1"
   repository_id = "spotmusic-front"
-  description = "Imagens Docker to SpotMusic FrontEnd"
+  description = "Imagens Docker to Seara FrontEnd"
   format = "DOCKER"
 }
 
@@ -41,14 +41,10 @@ resource "google_service_networking_connection" "private_vpc_connection" {
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
 }
 
-resource "random_id" "seara" {
-  byte_length = 4
-}
-
 resource "google_sql_database_instance" "instance" {
   provider = google-beta
 
-  name             = "private-instance-${random_id.db_name_suffix.hex}"
+  name             = "searaembu"
   region           = "us-central1"
   database_version = "POSTGRES_14"
 
