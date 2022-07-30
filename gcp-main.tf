@@ -22,7 +22,6 @@ resource "google_vpc_access_connector" "connector" {
   region        = "us-central1"
   ip_cidr_range = "10.8.0.0/28"
   network       = "default"
-  machine_type = "e2-micro"
 }
 
 resource "google_sql_database_instance" "instance" {
