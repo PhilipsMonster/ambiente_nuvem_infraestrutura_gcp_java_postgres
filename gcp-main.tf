@@ -17,28 +17,27 @@ resource "google_artifact_registry_repository" "seara-repo-front" {
   format = "DOCKER"
 }
 
-resource "google_compute_network" "private_network" {
-  provider = google-beta
-
-  name = "private-network"
+resource "google_vpc_access_connector" "vpc_seara" {
+  provider      = google-beta
+  name          = "vpc-seara"
+  subnet {
+    name = google_compute_subnetwork.custom_test.name
+  }
+  machine_type = "e2-micro"
 }
 
-resource "google_compute_global_address" "private_ip_address" {
-  provider = google-beta
-
-  name          = "private-ip-address"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = google_compute_network.private_network.id
+resource "google_compute_subnetwork" "custom_test" {
+  provider      = google-beta
+  name          = "vpc-con"
+  ip_cidr_range = "10.2.0.0/28"
+  region        = "us-central1"
+  network       = google_compute_network.custom_test.id
 }
 
-resource "google_service_networking_connection" "private_vpc_connection" {
-  provider = google-beta
-
-  network                 = google_compute_network.private_network.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+resource "google_compute_network" "seara" {
+  provider                = google-beta
+  name                    = "vpc-seara"
+  auto_create_subnetworks = false
 }
 
 resource "google_sql_database_instance" "instance" {
@@ -48,13 +47,9 @@ resource "google_sql_database_instance" "instance" {
   region           = "us-central1"
   database_version = "POSTGRES_14"
 
-  depends_on = [google_service_networking_connection.private_vpc_connection]
+  depends_on = [google_vpc_access_connector.vpc_seara]
 
   settings {
-    tier = "db-f1-micro"
-    ip_configuration {
-      ipv4_enabled    = false
-      private_network = google_compute_network.private_network.id
-    }
+    tier = "db-f1-micro"    
   }
 }
