@@ -17,7 +17,7 @@ resource "google_artifact_registry_repository" "seara-repo-front" {
   format = "DOCKER"
 }
 
-resource "google_vpc_access_connector" "connector" {
+resource "google_vpc_access_connector" "connector2" {
   name          = "vpcconn"
   region        = "us-central1"
   ip_cidr_range = "10.8.0.0/28"
@@ -31,7 +31,7 @@ resource "google_sql_database_instance" "instance" {
   region           = "us-central1"
   database_version = "POSTGRES_14"
 
-  depends_on = [google_vpc_access_connector.connector]
+  depends_on = [google_vpc_access_connector.connector2]
 
   settings {
     tier = "db-f1-micro"    
