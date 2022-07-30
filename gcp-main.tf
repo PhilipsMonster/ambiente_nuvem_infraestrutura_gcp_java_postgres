@@ -17,13 +17,10 @@ resource "google_artifact_registry_repository" "seara-repo-front" {
   format = "DOCKER"
 }
 
-resource "google_vpc_access_connector" "vpc_seara" {
-  provider      = google-beta
-  name          = "vpc-seara"
-  subnet {
-    name = google_compute_subnetwork.custom_test.name
-  }
-  machine_type = "e2-micro"
+resource "google_compute_network" "custom_test" {
+  provider                = google-beta
+  name                    = "vpc-con"
+  auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "custom_test" {
@@ -34,10 +31,13 @@ resource "google_compute_subnetwork" "custom_test" {
   network       = google_compute_network.custom_test.id
 }
 
-resource "google_compute_network" "seara" {
-  provider                = google-beta
-  name                    = "vpc-seara"
-  auto_create_subnetworks = false
+resource "google_vpc_access_connector" "connector" {
+  provider      = google-beta
+  name          = "vpc-con"
+  subnet {
+    name = google_compute_subnetwork.custom_test.name
+  }
+  machine_type = "e2-micro"
 }
 
 resource "google_sql_database_instance" "instance" {
@@ -47,7 +47,7 @@ resource "google_sql_database_instance" "instance" {
   region           = "us-central1"
   database_version = "POSTGRES_14"
 
-  depends_on = [google_vpc_access_connector.vpc_seara]
+  depends_on = [google_vpc_access_connector.connector]
 
   settings {
     tier = "db-f1-micro"    
