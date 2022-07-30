@@ -1,0 +1,42 @@
+### Heroku
+1-Acessar o Heroku e copiar o API Key
+a:Account Settings
+b:API Key
+c:Reveal
+d:copiar
+2-Acessar o Terraform (https://app.terraform.io/app/organizations)
+a:Create an Organization
+b:Vincular ao repositório do projeto de infraestrutura do Git
+c:Variables
+d:+Add Variable
+e:Criar a variável HEROKU_API_KEY e colar a Key do Heroku + Sensitive
+f:Criar a variável HEROKU_EMAIL e adicionar o email cadastrado no Heroku + Sensitive
+g:Será possível visualizar o Terraform vinculado ao projeto do Git, em Github apps
+3-Criar no projeto de infraestrutura do Git o providers.terraform
+    terraform {
+        required_providers {
+            heroku = {
+            source = "heroku/heroku"
+            version = "5.1.1"
+            }
+        }
+    }
+4-Criar o main.tf para provisionar o APP e o Banco Postgres como addon
+    # Create a new Heroku app
+    resource "heroku_app" "searaembu" {
+    name   = "searaembu"
+    region = "us"
+    }
+
+    # Create a database, and configure the app to use it
+    resource "heroku_addon" "database" {
+    app_id = heroku_app.searaembu.id
+    plan   = "heroku-postgresql:hobby-dev"
+    }
+5-Fazer o MR do projeto até o main
+6-Na Organization do Terraform (https://app.terraform.io/app/organizations) acompanhar a execução da pipeline
+a:Runs
+b:Merge pull
+c:Aprove o plan & apply
+d:Aguardar a conclusão
+7-Acessar o Heroku e verificar se o APP e o addon do Postgres foram criados
