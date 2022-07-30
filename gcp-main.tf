@@ -63,11 +63,6 @@ resource "google_sql_database_instance" "instance" {
   }
 }
 
-provider "google-beta" {
-  region = "us-central1"
-  zone   = "us-central1-a"
-}
-
 resource "google_sql_database" "searaembu" {
   name      = "searaembu"
   instance  = local.sql_instance_name
