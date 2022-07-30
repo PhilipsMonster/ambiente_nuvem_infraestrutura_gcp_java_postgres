@@ -62,17 +62,3 @@ resource "google_sql_database_instance" "instance" {
     }
   }
 }
-
-resource "google_sql_database" "searaembu" {
-  name      = "searaembu"
-  instance  = local.sql_instance_name
-  charset   = "utf8"
-  collation = "utf8_general_ci"
-}
-
-resource "google_sql_user" "user" {
-  name     = "seara"
-  instance = local.sql_instance_name
-  host     = "%"
-  password = ""
-}
