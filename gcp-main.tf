@@ -3,7 +3,7 @@ resource "google_artifact_registry_repository" "seara-repo-back" {
   provider = google-beta
 
   location = "us-central1"
-  repository_id = "spotmusic-back"
+  repository_id = "seara-back"
   description = "Imagens Docker to Seara BackEnd"
   format = "DOCKER"
 }
@@ -12,7 +12,7 @@ resource "google_artifact_registry_repository" "seara-repo-front" {
   provider = google-beta
 
   location = "us-central1"
-  repository_id = "spotmusic-front"
+  repository_id = "seara-front"
   description = "Imagens Docker to Seara FrontEnd"
   format = "DOCKER"
 }
