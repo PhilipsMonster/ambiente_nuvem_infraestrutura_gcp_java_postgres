@@ -1,42 +1,121 @@
-### Heroku
-1-Acessar o Heroku e copiar o API Key
-a:Account Settings
-b:API Key
-c:Reveal
-d:copiar
-2-Acessar o Terraform (https://app.terraform.io/app/organizations)
-a:Create an Organization
-b:Vincular ao repositório do projeto de infraestrutura do Git
-c:Variables
-d:+Add Variable
-e:Criar a variável HEROKU_API_KEY e colar a Key do Heroku + Sensitive
-f:Criar a variável HEROKU_EMAIL e adicionar o email cadastrado no Heroku + Sensitive
-g:Será possível visualizar o Terraform vinculado ao projeto do Git, em Github apps
-3-Criar no projeto de infraestrutura do Git o providers.terraform
+### GCP
+1-Acessar o GCP (console)
+2-Criar um novo projeto
+3-Ativar o Cloud Resource Manager API
+4-Ativar o Service Networking API
+5-Ativar o Cloud SQL Admin API
+6-Criar uma conta de serviço no IAM e dar permissão de adm
+    a:Acesse o menu lateral do GCP
+    b:vá na opção IAM e Administrador
+    c:No submenu lateral acesse "Contas de Serviço" e clique em CRIAR CONTA DE SERVIÇO no topo
+        -Nome: Terraform
+        -ID: terraform
+        -Descrição: Usuário do Terraform
+    d:Na sequência associe permissões para essa Conta
+    e:Criar uma chave que será usada pelo nosso Terraform
+    f:Fazer download dessa chave (salvar o arquivo em local que não irá ser commitado no Git)
+    g:Reenomei o aquivo para "gcpkey.json" e armazene a mesma na pasta da VM Vagrant no HOME, usando o comando:
+        mv /vagrant/SUACHAVE.json  /vagrant/gcpkey.json
+7-Criar o projeto de criação de infraestrutura no Git
+8-Em usuário/Settings/Applications configurar o Terraform   
+    a:Select repositories
+    b:Adicionar o novo repositório criados
+    c:salvar
+9-Acessar o Terraform (https://app.terraform.io/app/organizations) e criar um workspace
+    a:New Workspace
+    b:Version control workflow (GITHub)
+    c:Selecione o repositório
+10-Adicione as variáveis do Google Cloud Plattaform
+    a:Vá para Variables
+    b:Workspace Variables
+    c:Add Variable
+    d:Key = GOOGLE_CREDENTIALS
+    e:Vá para a pasta onde está o arquivo gcpkey.json
+    f:Digite o comando: tr -d '\n' < /c/Source/seara-de-jesus/gcpkey.json
+    g:Copie o conteúdo que está nos parênteses
+    e:Volte para o Terraform e cole o conteúdo copiado para o campo Value
+    f:Marque a opção: Sensitive
+    g:Salve a variável
+11-Retorne ao repositório, e via Visual Studio crie o projeto
+12-Crie o arquivo providers.tf (Responsável por determinar em qual nuvem será criada a infra)
+(verifique se não existe uma versão mais recente)
+    # Configura o Provider Google Cloud com o Projeto
     terraform {
-        required_providers {
-            heroku = {
-            source = "heroku/heroku"
-            version = "5.1.1"
-            }
+    required_providers {
+        google = {
+        source = "hashicorp/google"
+        version = "4.27.0"
         }
     }
-4-Criar o main.tf para provisionar o APP e o Banco Postgres como addon
-    # Create a new Heroku app
-    resource "heroku_app" "searaembu" {
-    name   = "searaembu"
-    region = "us"
     }
 
-    # Create a database, and configure the app to use it
-    resource "heroku_addon" "database" {
-    app_id = heroku_app.searaembu.id
-    plan   = "heroku-postgresql:hobby-dev"
+    # Configura o Provider Google Cloud com o Projeto
+    provider "google" {
+
+    project = "seara-embu"
+    region  = "us-west1"
+    zone    = "us-west1-b"
     }
-5-Fazer o MR do projeto até o main
-6-Na Organization do Terraform (https://app.terraform.io/app/organizations) acompanhar a execução da pipeline
-a:Runs
-b:Merge pull
-c:Aprove o plan & apply
-d:Aguardar a conclusão
-7-Acessar o Heroku e verificar se o APP e o addon do Postgres foram criados
+
+    provider "google-beta" {
+    project = "seara-embu"
+    region  = "us-west1"
+    zone    = "us-west1-b"
+    }
+13-Crie o arquivo gcp-main.tf (responsável por instanciar as ferramentas no GCP)
+    a:Iremos criar um registry para armazenar o build do BackEnd
+    b:Iremos criar um registry para armazenar o build do FrontEnd
+    c:Iremos criar um Serveless VPC para permitir que o backend consiga se comunicar com o Banco
+    d:Iremos criar uma instância de um banco Postgres
+
+    # Create Artifact Registry Repository for Docker containers
+    resource "google_artifact_registry_repository" "seara-repo-back" {
+    provider = google-beta
+
+    location = "us-central1"
+    repository_id = "seara-back"
+    description = "Imagens Docker to Seara BackEnd"
+    format = "DOCKER"
+    }
+
+    resource "google_artifact_registry_repository" "seara-repo-front" {
+    provider = google-beta
+
+    location = "us-central1"
+    repository_id = "seara-front"
+    description = "Imagens Docker to Seara FrontEnd"
+    format = "DOCKER"
+    }
+
+    resource "google_vpc_access_connector" "connector" {
+    name          = "vpcconn"
+    region        = "us-central1"
+    ip_cidr_range = "10.8.0.0/28"
+    network       = "default"
+    }
+
+    resource "google_sql_database_instance" "instance" {
+    provider = google-beta
+
+    name             = "searaembudb"
+    region           = "us-central1"
+    database_version = "POSTGRES_14"
+
+    depends_on = [google_vpc_access_connector.connector]
+
+    settings {
+        tier = "db-f1-micro"    
+    }
+    }
+
+14-Commitar o projeto até o main
+15-Voltar a Workspace do Terraform e acompanhar a execução
+    a:Runs
+    b:Entrar no Runs
+    c:Se o Plan não falhar, Aprovar o Apply e acompanhar
+    d:Concluir
+16-Acessar o GCP e acessar o projeto
+17-Vá em Rede VPC e verifique se a mesma foi criada
+18-Vá em SQL e verifique se a instância foi criada
+19-Vá em Artifact Registry e verifique se foram criados os dois: backend e FrontEnd
+20-Sua infra está pronta para receber o deploy da aplicação e criar os serviços no Cloud Run
